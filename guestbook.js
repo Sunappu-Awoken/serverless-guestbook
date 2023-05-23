@@ -2,77 +2,89 @@
  * Web application
  */
 const apiUrl = 'https://us-south.functions.appdomain.cloud/api/v1/web/ff8f65a9-7213-4413-91f0-f9f3a2f2cd40/guestbook';
+
 const guestbook = {
-  // retrieve the existing guestbook entries
+  // Retrieve the existing guestbook entries
   get() {
-    return $.ajax({
-      type: 'GET',
-      url: `${apiUrl}/read-guestbook-entries-sequence.json`,
-      dataType: 'json'
-    });
+    return fetch(`${apiUrl}/read-guestbook-entries-sequence.json`)
+      .then(response => response.json())
+      .catch(error => {
+        console.error('Error:', error);
+        throw error;
+      });
   },
-  // add a single guestbood entry
+
+  // Add a single guestbook entry
   add(name, email, comment) {
-    console.log('Sending', name, email, comment)
-    return $.ajax({
-      type: 'PUT',
-      url: `${apiUrl}/save-guestbook-entry-sequence.json`,
-      contentType: 'application/json; charset=utf-8',
-      data: JSON.stringify({
+    console.log('Sending', name, email, comment);
+    return fetch(`${apiUrl}/save-guestbook-entry-sequence.json`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({
         name,
         email,
         comment,
       }),
-      dataType: 'json',
-    });
-  }
+    })
+      .then(response => response.json())
+      .catch(error => {
+        console.error('Error:', error);
+        throw error;
+      });
+  },
 };
 
-(function() {
-
+(function () {
   let entriesTemplate;
 
   function prepareTemplates() {
     entriesTemplate = Handlebars.compile($('#entries-template').html());
   }
 
-  // retrieve entries and update the UI
+  // Retrieve entries and update the UI
   function loadEntries() {
     console.log('Loading entries...');
     $('#entries').html('Loading entries...');
-    guestbook.get().done(function(result) {
-      if (!result.entries) {
-        return;
-      }
+    guestbook
+      .get()
+      .then(result => {
+        if (!result.entries) {
+          return;
+        }
 
-      const context = {
-        entries: result.entries
-      }
-      $('#entries').html(entriesTemplate(context));
-    }).error(function(error) {
-      $('#entries').html('No entries');
-      console.log(error);
-    });
+        const context = {
+          entries: result.entries,
+        };
+        $('#entries').html(entriesTemplate(context));
+      })
+      .catch(error => {
+        $('#entries').html('No entries');
+        console.error(error);
+      });
   }
 
-  // intercept the click on the submit button, add the guestbook entry and
-  // reload entries on success
-  $(document).on('submit', '#addEntry', function(e) {
+  // Intercept the click on the submit button, add the guestbook entry and reload entries on success
+  $(document).on('submit', '#addEntry', function (e) {
     e.preventDefault();
 
-    guestbook.add(
-      $('#name').val().trim(),
-      $('#email').val().trim(),
-      $('#comment').val().trim()
-    ).done(function(result) {
-      // reload entries
-      loadEntries();
-    }).error(function(error) {
-      console.log(error);
-    });
+    guestbook
+      .add(
+        $('#name').val().trim(),
+        $('#email').val().trim(),
+        $('#comment').val().trim()
+      )
+      .then(result => {
+        // Reload entries
+        loadEntries();
+      })
+      .catch(error => {
+        console.error(error);
+      });
   });
 
-  $(document).ready(function() {
+  $(document).ready(function () {
     prepareTemplates();
     loadEntries();
   });
